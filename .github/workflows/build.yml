@@ -11,15 +11,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Find project folder
+      - name: Unpack and find project
         run: |
-          echo "=== Files in repository ==="
-          find . -not -path './.git/*' -type f | head -100
           F=$(find . -name settings.gradle.kts -not -path './.git/*' | head -1)
           if [ -z "$F" ]; then
-            echo "ERROR: settings.gradle.kts not found. Project files were not uploaded to the repository."
-            exit 1
+            Z=$(find . -maxdepth 2 -name '*.zip' -not -path './.git/*' | head -1)
+            echo "Unpacking: $Z"
+            if [ -z "$Z" ]; then echo "ERROR: no project and no zip found"; exit 1; fi
+            mkdir -p /tmp/proj
+            unzip -q -o "$Z" -d /tmp/proj
+            F=$(find /tmp/proj -name settings.gradle.kts | head -1)
           fi
+          if [ -z "$F" ]; then echo "ERROR: settings.gradle.kts not found"; exit 1; fi
           echo "Found: $F"
           echo "PROJECT_DIR=$(dirname "$F")" >> $GITHUB_ENV
 
